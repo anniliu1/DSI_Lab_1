@@ -1,0 +1,204 @@
+---
+title: "Lab #1: Using dplyr and ggplot2 to recreate a plot"
+author: <font size = 5>Student Anni Liu</font>
+date: <font size = 2>*Due 11:59 pm on October 6, 2021*</font>
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    fig_height: 4.5
+    fig_width: 4.5
+    theme: journal
+---
+
+[A link to the repository](https://github.com/anniliu1/DSI_Lab1.git)
+
+```{r,echo=TRUE}
+knitr::opts_chunk$set(
+  cache = TRUE,
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy.opts = list(width.cutoff = 60),
+  fig.width = 8,
+  fig.height = 6
+)
+
+```
+
+\
+
+### Load libraries and data wrangling
+```{r}
+## load required libraries -----------------------------------------
+library(tidyverse)
+library(medicaldata)
+
+## assign medicaldata::covid_testing data to covid dataframe -------
+covid <- as_tibble(medicaldata::covid_testing) ## transform data into tibble
+
+## filter data for COVID tests
+covid <- covid %>%
+  filter(test_id == 'covid') ## filter data for COVID tests
+
+## change test results ---------------------------------------------
+covid$result <- str_to_title(covid$result) ## capitalize test results
+
+## create covid_summary dataframe ----------------------------------
+covid_summary <- covid %>%
+  group_by(pan_day) %>% ## group data by pandemic day
+  summarise(percent_positive = sum(result == 'Positive', na.rm = TRUE) / n()) ## calculate percent of positive tests
+
+## create covid_ages dataframe -------------------------------------
+covid_ages <- covid %>%
+  filter(result == 'Positive') %>% ## filter for positive results
+  mutate(age_category = case_when( ## categorize age
+   age >= 0 &  age <=10  ~ '0 - 10',
+   age >= 11 & age <= 20 ~ '11 - 20',
+   age >= 21 & age <= 30 ~ '21 - 30',
+   age >= 31 & age <= 40 ~ '31 - 40',
+   age >= 41 & age <= 50 ~ '41 - 50',
+   age >= 51 & age <= 60 ~ '51 - 60',
+   age >= 61  ~ '61+')
+  )
+
+## disable scientific notation -------------------------------------
+options(scipen = 999, digits = 2)
+
+```
+
+\
+
+### Plot A
+
+```{r plota, fig.height = 2.40, fig.width = 8.5}
+## plot the number of tests by pandemic day -----------------------------------------
+plotA <- covid %>% ## use covid dataframe
+  group_by(pan_day) %>% ## group data by pandemic day
+  mutate(
+    number_positive = sum(result == 'Positive', na.rm = TRUE), ## create a variable to count number of positive tests per day
+    number_negative = sum(result == 'Negative', na.rm = TRUE), ## create a variable to count number of negative tests per day
+    number_invalid = sum(result == 'Invalid', na.rm = TRUE) ## create a variable to count number of invalid tests per day
+  ) %>% 
+  select(pan_day, number_positive:number_invalid) %>% ## select variables
+  pivot_longer( ## change data into long format
+    !pan_day,
+    names_to = 'Type', 
+    values_to = 'Number') %>% 
+  distinct() %>% ## filter data for distinctive rows
+  ggplot(mapping = aes(x = pan_day, ## initialize ggplot object
+                       y = Number, 
+                       fill = Type) ## color bars by test result type (positive, negative, invalid)
+  ) + 
+  geom_bar(stat = 'identity', ## make stacked bar plot
+           position = 'stack'
+  ) +
+  scale_fill_manual(values = c('#1f77b4', '#e377c2', '#2ca02c'), ## change bar color
+                    labels = c("Invalid", "Negative", "Positive") ## relabel legend text
+  ) +
+  labs(
+    x = 'Pandemic Day', ## relabel x-axis
+    y = 'Total Number of Tests', ## relabel y-axis
+    title = 'COVID-19 Test Results at CHOP: \nFirst 107 Days of the Pandemic', ## relabel title
+    fill = 'Test Result' ## relabel legend title
+  ) +
+  theme_minimal() + ## remove gray background
+  theme(plot.title = element_text(hjust = 0.5)) + ## center title
+  geom_segment(mapping = aes(x = 69, ## plot arrow
+                             y = 239,
+                             xend = 79,
+                             yend = 20),
+               arrow = arrow(length = unit(0.03, "npc"))
+  ) + 
+  annotate("text", ## write text
+           x = 68.5,
+           y = 303,
+           label = "Highest Number of \nPositive Tests (20) \non Day 79",
+           size = 2 ## adjust text size to resemble original plot 
+  )
+
+plotA
+```
+\
+
+### Plot B
+```{r plotb, fig.height = 2.3, fig.width = 3.5}
+## plot the percent of positive tests by pandemic day -----------------------------------------
+plotB <- covid_summary %>% ## use covid_summary dataframe
+  ggplot(mapping = aes(x = pan_day, ## initialize ggplot object
+                       y = percent_positive)
+  ) + 
+  geom_bar(stat = 'identity', ## make stacked bar plot
+           position = 'stack',
+           fill = '#2ca02c' ## change bar color
+  ) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  ## set y-axis labels in percents
+  labs(
+    x = 'Pandemic Day', ## relabel x-axis
+    y = 'Percent Positive Tests', ## relabel y-axis
+    title = 'Percent of Positive \nTest Results by Day', ## relabel title
+  ) +
+  theme_minimal() + ## remove gray background
+  theme(
+    plot.title = element_text(hjust = 0.5), ## center title
+    legend.position = 'none' ## remove legend
+  ) 
+
+plotB
+```
+
+
+\
+
+### Plot C
+```{r plotc, fig.height = 2.3, fig.width = 3.5}
+## plot the number of positive tests by age group -----------------------------------------
+plotC <- covid_ages %>% ## use covid_ages dataframe
+  filter(result == 'Positive') %>%  ## filter data for positive test results  
+  group_by(age_category) %>% ## group data by age category
+  mutate(number_positive = n()) %>% ## create a variable to count number of positive tests per age group
+  select(age_category, number_positive) %>% ## select variables 
+  pivot_longer( ## change data into long format
+    !age_category, 
+    names_to = 'Positive', 
+    values_to = 'Number'
+  ) %>%
+  distinct() %>% ## filter data for distinctive rows
+  ggplot(mapping = aes(x = age_category, ## initialize ggplot object
+                       y = Number)
+  ) + 
+  geom_bar(stat = 'identity', ## make stacked bar plot
+           position = 'stack',
+           fill = '#2ca02c' ## change bar color
+  ) +
+  labs(
+    x = 'Age', ## relabel x-axis
+    y = 'Number of \nPositive Tests', ## relabel y-axis
+    title = 'Positive Tests \nby Age Group', ## relabel title
+  ) +
+  theme_minimal() + ## remove gray background
+  theme(
+    plot.title = element_text(hjust = 0.5), ## center title
+    legend.position = 'none', ## remove legend
+    axis.text.x = element_text(angle = 45, ## rotate x-axis label
+                               hjust = 0.8) ## adjust location to resemble original plot
+  ) 
+
+plotC
+
+```
+
+### Putting the plots together
+```{r together, fig.width = 8.5}
+## arrange Plot A, Plot B, and Plot C -----------------------------------------
+ggpubr::ggarrange(plotA, ## first row with Plot A
+                  ggpubr::ggarrange(plotB, plotC, ## second row with Plot B and Plot C
+                                    ncol = 2, 
+                                    labels = c('B', 'C')), ## label plots 'B' and 'C'
+  nrow = 2, 
+  labels = 'A', ## label plot 'A'
+  common.legend = TRUE, ## create common legend
+  legend = 'bottom' ## put legend at the bottom
+)
+```
