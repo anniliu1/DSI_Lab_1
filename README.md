@@ -1,3 +1,4 @@
 # DSI_Lab1
-This is the completed work of Data Challenge 1. \n
+This is the completed work of Data Challenge 1. 
+
 Massive thanks for your time on reviewing it.
