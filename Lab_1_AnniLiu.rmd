@@ -71,7 +71,6 @@ options(scipen = 999, digits = 2)
 \
 
 ### Plot A
-
 ```{r plota, fig.height = 2.40, fig.width = 8.5}
 ## plot the number of tests by pandemic day -----------------------------------------
 plotA <- covid %>% ## use covid dataframe
@@ -120,6 +119,7 @@ plotA <- covid %>% ## use covid dataframe
 
 plotA
 ```
+
 \
 
 ### Plot B
@@ -147,7 +147,6 @@ plotB <- covid_summary %>% ## use covid_summary dataframe
 
 plotB
 ```
-
 
 \
 
@@ -187,6 +186,8 @@ plotC <- covid_ages %>% ## use covid_ages dataframe
 
 plotC
 ```
+
+\
 
 ### Putting the plots together
 ```{r together, fig.width = 8.5}
