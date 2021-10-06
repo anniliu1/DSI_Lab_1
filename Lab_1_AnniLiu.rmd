@@ -24,7 +24,6 @@ knitr::opts_chunk$set(
   fig.width = 8,
   fig.height = 6
 )
-
 ```
 
 \
@@ -65,7 +64,6 @@ covid_ages <- covid %>%
 
 ## disable scientific notation -------------------------------------
 options(scipen = 999, digits = 2)
-
 ```
 
 \
