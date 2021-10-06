@@ -186,7 +186,6 @@ plotC <- covid_ages %>% ## use covid_ages dataframe
   ) 
 
 plotC
-
 ```
 
 ### Putting the plots together
